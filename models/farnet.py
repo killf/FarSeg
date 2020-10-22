@@ -1,6 +1,6 @@
 import torch
 from torch.nn.modules import Module, Conv2d, BatchNorm2d, ReLU
-from torch.nn.functional import upsample_bilinear, upsample_nearest, adaptive_avg_pool2d
+from torch.nn.functional import interpolate, adaptive_avg_pool2d
 
 from models.backbone import BACKBONES
 
@@ -18,7 +18,7 @@ class FarNet(Module):
         self.focal_factor = 4
         self.focal_z = 1.0
 
-        self.backbone = BACKBONES[backbone](pretrained=pretrained, **kwargs)
+        self.backbone = BACKBONES[backbone](pretrained=pretrained)
 
         self.conv_c6 = Conv2d(2048, num_feature, 1)
         self.conv_c5 = Conv2d(2048, num_feature, 1)
@@ -44,9 +44,9 @@ class FarNet(Module):
         u = self.conv_c6(c6)
 
         p5 = self.conv_c5(c5)
-        p4 = (self.conv_c4(c4) + upsample_nearest(p5, scale_factor=2)) / 2.
-        p3 = (self.conv_c3(c3) + upsample_nearest(p4, scale_factor=2)) / 2.
-        p2 = (self.conv_c2(c2) + upsample_nearest(p3, scale_factor=2)) / 2.
+        p4 = (self.conv_c4(c4) + interpolate(p5, scale_factor=2)) / 2.
+        p3 = (self.conv_c3(c3) + interpolate(p4, scale_factor=2)) / 2.
+        p2 = (self.conv_c2(c2) + interpolate(p3, scale_factor=2)) / 2.
 
         z5 = self.fs5(p5, u)
         z4 = self.fs4(p4, u)
@@ -59,7 +59,7 @@ class FarNet(Module):
         o2 = self.up2(z2)
 
         x = (o5 + o4 + o3 + o2) / 4.
-        x = upsample_bilinear(x, scale_factor=4)
+        x = interpolate(x, scale_factor=4, mode="bilinear", align_corners=True)
         logit = self.classify(x)
         if self.training:
             return self._get_loss(logit, label)
@@ -72,28 +72,24 @@ class FarNet(Module):
 
     def _get_loss(self, logit, label):
         logit = logit.permute(0, 2, 3, 1).flatten(0, 2)
-        label = label.permute(0, 2, 3, 1).flatten()
-        mask = (label != self.ignore_index).type(torch.float32)
-        loss = torch.nn.functional.cross_entropy(
-            logit,
-            label,
-            ignore_index=self.ignore_index,
-            reduction="none")
+        label = label.flatten()
+        mask = label != self.ignore_index
+        logit, label = logit[mask], label[mask]
+        loss = torch.nn.functional.cross_entropy(logit, label, reduction="none")
 
         probs = torch.softmax(logit, dim=1)
-        index = torch.unsqueeze(label, 0)
-        p = torch.gather(probs, 1, index)
-        p = torch.reshape(p, mask.shape)
+        index = torch.unsqueeze(label, 1)
+        p = torch.gather(probs, 1, index).squeeze_()
 
         z = torch.pow(1.0 - p, self.focal_factor)
         z = self.focal_z * z
 
         if self.current_step < self.annealing_step:
-            z += (1 - z) * (1 - self.current_step / self.annealing_step)
+            z = z + (1 - z) * (1 - self.current_step / self.annealing_step)
         self.current_step += 1
 
-        loss = z * loss * mask
-        avg_loss = torch.mean(loss) / (torch.mean(mask) + self.EPS)
+        loss = z * loss
+        avg_loss = torch.mean(loss) / (torch.mean(mask.type(torch.float32)) + self.EPS)
         return avg_loss
 
 
@@ -119,15 +115,15 @@ class Decoder(Module):
                 return x
 
         if self.scale >= 2:
-            x = upsample_bilinear(x, scale_factor=2)
+            x = interpolate(x, scale_factor=2, mode="bilinear", align_corners=True)
 
         if self.scale >= 4:
             x = self.conv2(x)
-            x = upsample_bilinear(x, scale_factor=2)
+            x = interpolate(x, scale_factor=2, mode="bilinear", align_corners=True)
 
         if self.scale >= 8:
             x = self.conv3(x)
-            x = upsample_bilinear(x, scale_factor=2)
+            x = interpolate(x, scale_factor=2, mode="bilinear", align_corners=True)
 
         return x
 
@@ -163,3 +159,4 @@ if __name__ == '__main__':
     x = torch.zeros(1, 3, 224, 224, dtype=torch.float32)
     lb = torch.zeros(1, 1, 224, 224, dtype=torch.int64)
     y = net(x, lb)
+    net.parameters()

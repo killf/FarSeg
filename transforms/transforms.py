@@ -48,7 +48,7 @@ class Compose:
     def __call__(self, img, label):
         for t in self.transforms:
             img, label = t(img, label)
-        return img
+        return img, label
 
     def __repr__(self):
         format_string = self.__class__.__name__ + '('
@@ -61,7 +61,7 @@ class Compose:
 
 class ToTensor:
     def __call__(self, pic, label):
-        return F.to_tensor(pic), F.to_tensor(label)
+        return F.to_tensor(pic), torch.from_numpy(np.array(label)).type(torch.int64)
 
     def __repr__(self):
         return self.__class__.__name__ + '()'
