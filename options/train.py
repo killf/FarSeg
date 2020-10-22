@@ -77,24 +77,19 @@ def parse_args():
         dest='save_dir',
         help='The directory for saving the model snapshot',
         type=str,
-        default='./output')
+        default='./outputs')
+    parser.add_argument(
+        '--log_dir',
+        dest='log_dir',
+        help='The directory for saving the log message',
+        type=str,
+        default='./logs')
     parser.add_argument(
         '--num_workers',
         dest='num_workers',
         help='Num workers for data loader',
         type=int,
         default=0)
-    parser.add_argument(
-        '--do_eval',
-        dest='do_eval',
-        help='Eval while training',
-        action='store_true')
-    parser.add_argument(
-        '--log_iters',
-        dest='log_iters',
-        help='Display logging information at every log_iters',
-        default=10,
-        type=int)
     parser.add_argument(
         '--device',
         dest='device',

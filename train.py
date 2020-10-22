@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 from datasets import DATASETS
 from models import MODELS
@@ -9,6 +10,7 @@ from utils import Timer, Counter, calculate_eta
 
 def main(args):
     device = torch.device(args.device)
+    logger = SummaryWriter(args.log_dir + "/test")
 
     if args.dataset not in DATASETS:
         raise Exception(f'`--dataset` is invalid. it should be one of {list(DATASETS.keys())}')
@@ -31,6 +33,7 @@ def main(args):
     optimizer = torch.optim.SGD(params=net.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4)
 
     start_epoch, total_epoch = 0, args.epochs
+    global_step = start_epoch * len(train_loader)
 
     for epoch in range(start_epoch, total_epoch):
         net.train()
@@ -60,6 +63,12 @@ def main(args):
                   f"| ETA {eta}",
                   end="\r",
                   flush=True)
+
+            logger.add_scalar("loss", float(loss), global_step=global_step)
+            logger.add_scalar("miou", float(miou), global_step=global_step)
+            global_step += 1
+            logger.flush()
+
             timer.restart()
         print()
         pass
