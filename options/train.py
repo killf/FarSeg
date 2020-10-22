@@ -55,11 +55,11 @@ def parse_args():
         type=int,
         default=32)
     parser.add_argument(
-        '--learning_rate',
-        dest='learning_rate',
+        '--lr',
+        dest='lr',
         help='Learning rate',
         type=float,
-        default=0.001)
+        default=0.0005)
     parser.add_argument(
         '--resume_model',
         dest='resume_model',
@@ -67,20 +67,14 @@ def parse_args():
         type=str,
         default=None)
     parser.add_argument(
-        '--save_interval_iters',
-        dest='save_interval_iters',
-        help='The interval iters for save a model snapshot',
-        type=int,
-        default=100)
-    parser.add_argument(
         '--save_dir',
         dest='save_dir',
         help='The directory for saving the model snapshot',
         type=str,
         default='./outputs')
     parser.add_argument(
-        '--log_dir',
-        dest='log_dir',
+        '--logs_dir',
+        dest='logs_dir',
         help='The directory for saving the log message',
         type=str,
         default='./logs')
