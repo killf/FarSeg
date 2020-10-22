@@ -3,6 +3,7 @@ from torch.nn.modules import Module, Conv2d, BatchNorm2d, ReLU
 from torch.nn.functional import interpolate, adaptive_avg_pool2d
 
 from models.backbone import BACKBONES
+from utils import calc_miou
 
 
 class FarNet(Module):
@@ -62,7 +63,7 @@ class FarNet(Module):
         x = interpolate(x, scale_factor=4, mode="bilinear", align_corners=True)
         logit = self.classify(x)
         if self.training:
-            return self._get_loss(logit, label)
+            return self._get_loss(logit, label), self._get_miou(logit, label)
         else:
             score_map = torch.softmax(logit, dim=1)
             score_map = score_map.permute(0, 2, 3, 1)
@@ -91,6 +92,10 @@ class FarNet(Module):
         loss = z * loss
         avg_loss = torch.mean(loss) / (torch.mean(mask.type(torch.float32)) + self.EPS)
         return avg_loss
+
+    def _get_miou(self, logit, label):
+        pred = torch.argmax(logit, dim=1).squeeze_(dim=1)
+        return calc_miou(pred, label, self.num_classes, self.ignore_index)
 
 
 class Decoder(Module):

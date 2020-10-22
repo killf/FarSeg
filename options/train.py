@@ -43,11 +43,11 @@ def parse_args():
 
     # params of training
     parser.add_argument(
-        '--iters',
-        dest='iters',
-        help='iters for training',
+        '--epochs',
+        dest='epochs',
+        help='epochs for training',
         type=int,
-        default=20000)
+        default=20)
     parser.add_argument(
         '--batch_size',
         dest='batch_size',
