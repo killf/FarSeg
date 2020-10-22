@@ -7,7 +7,7 @@ import os
 from datasets import DATASETS
 from models import MODELS
 from transforms import *
-from utils import Timer, Counter, calculate_eta
+from utils import Timer, Counter, save_checkpoint, load_checkpoint, calculate_eta
 
 
 def main(args):
@@ -31,11 +31,18 @@ def main(args):
         val_loader = DataLoader(val_data, batch_size=args.batch_size, num_workers=args.num_workers)
         do_val = True
 
-    net = MODELS[args.model_name](pretrained=True, **args.__dict__).to(device)
+    net = MODELS[args.model_name](pretrained=args.resume is None, **args.__dict__).to(device)
     optimizer = torch.optim.SGD(params=net.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4)
 
-    start_epoch, total_epoch = 0, args.epochs
-    global_step = start_epoch * len(train_loader)
+    start_epoch, total_epoch, global_step = 0, args.epochs, 0
+    if args.resume is not None:
+        checkpoint = load_checkpoint(args.resume)
+        net.load_state_dict(checkpoint['net'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+
+        start_epoch = checkpoint['epoch']
+        global_step = checkpoint['global_step']
+        print(f"=> Start epoch {start_epoch} ")
 
     for epoch in range(start_epoch, total_epoch):
         net.train()
@@ -57,7 +64,7 @@ def main(args):
             counter.append(loss=loss, miou=miou, reader_time=reader_time, batch_time=batch_time)
             eta = calculate_eta(len(train_loader) - step, counter.batch_time)
             print(f"[epoch={epoch + 1}/{total_epoch}] "
-                  f"[step={step + 1}/{len(train_loader)}] "
+                  f"step={step + 1}/{len(train_loader)} "
                   f"loss={loss:.4f}/{counter.loss:.4f} "
                   f"miou={miou:.4f}/{counter.miou:.4f} "
                   f"batch_time={counter.batch_time:.4f} "
@@ -73,6 +80,14 @@ def main(args):
 
             timer.restart()
         print()
+
+        save_checkpoint({
+            'net': net.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'epoch': epoch + 1,
+            'global_step': global_step,
+        }, epoch + 1, False, save_dir=args.save_dir)
+
         pass
 
     pass

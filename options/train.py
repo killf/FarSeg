@@ -61,8 +61,8 @@ def parse_args():
         type=float,
         default=0.0005)
     parser.add_argument(
-        '--resume_model',
-        dest='resume_model',
+        '--resume',
+        dest='resume',
         help='The path of resume model',
         type=str,
         default=None)
