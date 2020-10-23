@@ -35,8 +35,8 @@ def parse_args():
         type=str,
         default=None)
     parser.add_argument(
-        '--num_works',
-        dest='num_works',
+        '--num_workers',
+        dest='num_workers',
         help="number works of data loader",
         type=int,
         default=0)

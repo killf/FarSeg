@@ -19,4 +19,4 @@ class ImageFolder(Dataset):
         img = Image.open(file_path)
         if self.transforms:
             img = self.transforms(img)
-        return img
+        return file_path, img

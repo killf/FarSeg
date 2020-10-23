@@ -21,42 +21,44 @@ def parse_args():
         dest='dataset',
         help="The dataset you want to test, which is one of {}".format(str(list(DATASETS.keys()))),
         type=str,
-        default='Map')
+        default='ImageFolder')
     parser.add_argument(
-        '--dataset_root',
-        dest='dataset_root',
+        '--infer_root',
+        dest='infer_root',
         help="dataset root directory",
         type=str,
         default=None)
+    parser.add_argument(
+        '--num_workers',
+        dest='num_workers',
+        help="number works of data loader",
+        type=int,
+        default=0)
 
     # params of prediction
-    parser.add_argument(
-        "--input_size",
-        dest="input_size",
-        help="The image size for net inputs.",
-        nargs=2,
-        default=[256, 256],
-        type=int)
-
     parser.add_argument(
         '--batch_size',
         dest='batch_size',
         help='Mini batch size',
         type=int,
         default=32)
-
     parser.add_argument(
-        '--model_dir',
-        dest='model_dir',
+        '--model_file',
+        dest='model_file',
         help='The path of model for evaluation',
         type=str,
-        default=None)
-
+        required=True)
     parser.add_argument(
         '--save_dir',
         dest='save_dir',
         help='The directory for saving the inference results',
         type=str,
-        default='./output/result')
+        default='./outputs/result')
+    parser.add_argument(
+        '--device',
+        dest='device',
+        help='device for training',
+        type=str,
+        default="cuda")
 
     return parser.parse_args()
