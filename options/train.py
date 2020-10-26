@@ -40,6 +40,12 @@ def parse_args():
         help="number works of data loader",
         type=int,
         default=0)
+    parser.add_argument(
+        '--device',
+        dest='device',
+        help='device for training',
+        type=str,
+        default="cuda")
 
     # params of training
     parser.add_argument(
@@ -78,17 +84,5 @@ def parse_args():
         help='The directory for saving the log message',
         type=str,
         default='./logs')
-    parser.add_argument(
-        '--num_workers',
-        dest='num_workers',
-        help='Num workers for data loader',
-        type=int,
-        default=0)
-    parser.add_argument(
-        '--device',
-        dest='device',
-        help='device for training',
-        type=str,
-        default="cuda")
 
     return parser.parse_args()
